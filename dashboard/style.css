@@ -288,7 +288,6 @@ main > * {
 }
 
 .reset-btn,
-.scenario-btn,
 .option-select {
     min-height: 38px;
     border: 1px solid var(--line);
@@ -308,7 +307,6 @@ main > * {
 }
 
 .reset-btn:hover,
-.scenario-btn:hover,
 .option-select:hover {
     border-color: var(--orange);
     color: var(--orange);
@@ -546,19 +544,19 @@ main > * {
     font-weight: 650;
 }
 
-.assessment-grid,
+.assessment-summary,
 .option-card-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
     min-width: 0;
 }
 
-.option-card,
-.assessment-group {
+.assessment-summary div,
+.option-card {
     min-width: 0;
     max-width: 100%;
-    padding: 14px;
+    padding: 12px;
     border: 1px solid var(--line);
     border-left: 5px solid var(--blue);
     border-radius: 8px;
@@ -571,18 +569,15 @@ main > * {
     background: #FFFDFB;
 }
 
-.option-card.positive,
-.assessment-group.positive {
+.option-card.positive {
     border-left-color: var(--mid-green);
 }
 
-.option-card.warning,
-.assessment-group.warning {
+.option-card.warning {
     border-left-color: var(--orange);
 }
 
-.option-card.risk,
-.assessment-group.risk {
+.option-card.risk {
     border-left-color: var(--red);
 }
 
@@ -595,42 +590,54 @@ main > * {
 }
 
 .option-card h3,
-.assessment-group h3 {
+.assessment-summary span {
     color: var(--navy);
-    font-size: 15px;
+    font-size: 14px;
     line-height: 1.2;
+    font-weight: 850;
 }
 
-.option-card dl,
-.assessment-group dl {
+.assessment-summary span {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+.assessment-summary strong {
+    display: block;
+    margin-top: 4px;
+    color: var(--navy);
+    font-size: 18px;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+}
+
+.option-card dl {
     display: grid;
-    gap: 7px;
+    gap: 6px;
 }
 
-.option-card dl div,
-.assessment-group dl div {
+.option-card dl div {
     display: flex;
     justify-content: space-between;
-    gap: 10px;
-    padding-bottom: 7px;
+    gap: 8px;
+    padding-bottom: 6px;
     border-bottom: 1px solid var(--line);
 }
 
-.option-card dl div:last-child,
-.assessment-group dl div:last-child {
+.option-card dl div:last-child {
     padding-bottom: 0;
     border-bottom: 0;
 }
 
-.option-card dt,
-.assessment-group dt {
+.option-card dt {
     color: var(--muted);
     font-size: 11px;
     font-weight: 800;
 }
 
-.option-card dd,
-.assessment-group dd {
+.option-card dd {
     color: var(--navy);
     font-size: 12px;
     font-weight: 850;
@@ -638,43 +645,21 @@ main > * {
     overflow-wrap: anywhere;
 }
 
-.option-card p,
-.decision-group p {
-    margin-top: 10px;
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 650;
-}
-
 .option-select {
     width: 100%;
-    margin-top: 12px;
-    background: var(--white);
+    margin-top: 10px;
+    border-color: var(--navy);
+    border-radius: 7px;
+    background: var(--navy);
+    color: var(--white);
+    appearance: none;
+    -webkit-appearance: none;
 }
 
 .option-card.active .option-select {
     border-color: var(--orange);
-    background: var(--navy);
+    background: var(--orange);
     color: var(--white);
-}
-
-.decision-group strong {
-    display: block;
-    margin-top: 8px;
-    font-size: 22px;
-    line-height: 1.15;
-}
-
-.decision-group strong.positive {
-    color: var(--dark-green);
-}
-
-.decision-group strong.warning {
-    color: var(--orange);
-}
-
-.decision-group strong.risk {
-    color: var(--red);
 }
 
 .stress-kpi .kpi-subtext {
@@ -831,7 +816,7 @@ td:first-child {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .assessment-grid,
+    .assessment-summary,
     .option-card-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -908,14 +893,17 @@ td:first-child {
         font-size: 18px;
     }
 
-    .assessment-grid,
+    .assessment-summary,
     .option-card-grid {
         grid-template-columns: 1fr;
     }
 
-    .option-card,
-    .assessment-group {
-        padding: 12px;
+    .option-card {
+        padding: 10px;
+    }
+
+    .assessment-summary div {
+        padding: 10px;
     }
 
     .mobile-swipe-note {
@@ -948,7 +936,7 @@ td:first-child {
     }
 
     .container {
-        padding: 8px 8px 20px;
+        padding: 8px 8px 34px;
     }
 
     h1 {
@@ -995,6 +983,19 @@ td:first-child {
 
     .kpi-subtext {
         font-size: 10px;
+    }
+
+    .option-card-header {
+        margin-bottom: 9px;
+    }
+
+    .option-card h3 {
+        font-size: 14px;
+    }
+
+    .option-select {
+        min-height: 36px;
+        margin-top: 8px;
     }
 
     th,

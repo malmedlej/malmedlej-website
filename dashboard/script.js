@@ -8,7 +8,7 @@ const DEFAULTS = {
     stressUtilization: 90
 };
 
-const OPTION_KEYS = ["current", "lower", "balanced", "higherCeiling", "fullBilling"];
+const OPTION_KEYS = ["lower", "balanced", "higherCeiling", "fullBilling"];
 
 const COMMERCIAL_OPTIONS = {
     current: {
@@ -43,7 +43,7 @@ const COMMERCIAL_OPTIONS = {
     }
 };
 
-let activeOption = "current";
+let activeOption = "";
 
 function byId(id) {
     return document.getElementById(id);
@@ -321,23 +321,9 @@ function updateAssessment(values, expected, stress, status) {
     box.classList.add(statusClass(status) === "risk" ? "high-risk" : statusClass(status) === "warning" ? "caution" : "positive");
 
     byId("recommendationText").textContent = recommendationText(status);
-    byId("selectedFloor").textContent = formatPercent(values.floor);
-    byId("selectedCeiling").textContent = formatPercent(values.ceiling);
-    byId("selectedMargin").textContent = formatPercent(values.margin);
-    byId("selectedSellingPrice").textContent = `${formatPrice(expected.sellingPrice)} SAR`;
-    byId("assessmentExpectedUtil").textContent = formatPercent(values.expectedUtilization);
-    byId("assessmentExpectedRevenue").textContent = `${formatCurrency(expected.revenue)} SAR`;
-    byId("assessmentExpectedCost").textContent = `${formatCurrency(expected.totalCost)} SAR`;
     byId("assessmentExpectedProfit").textContent = `${formatCurrency(expected.profit)} SAR`;
-    byId("assessmentExpectedMargin").textContent = formatPercent(expected.marginPercent);
-    byId("assessmentStressUtil").textContent = formatPercent(values.stressUtilization);
     byId("assessmentStressProfit").textContent = `${formatCurrency(stress.profit)} SAR`;
-    byId("assessmentStressMargin").textContent = formatPercent(stress.marginPercent);
-    byId("assessmentStressUnbilled").textContent = formatNumber(stress.unbilledAboveCeiling);
     byId("assessmentStressLeakage").textContent = `${formatCurrency(stress.revenueLeakage)} SAR`;
-    byId("assessmentDecision").textContent = status;
-    byId("assessmentDecision").className = statusClass(status);
-    byId("assessmentAdjustment").textContent = adjustmentText(status);
 }
 
 function optionComment(status, option) {
@@ -366,13 +352,10 @@ function renderCommercialOptions(values) {
                 <div><dt>Floor</dt><dd>${formatPercent(candidate.floor)}</dd></div>
                 <div><dt>Ceiling</dt><dd>${formatPercent(candidate.ceiling)}</dd></div>
                 <div><dt>Margin</dt><dd>${formatPercent(candidate.margin)}</dd></div>
-                <div><dt>Selling Price</dt><dd>${formatPrice(expected.sellingPrice)} SAR</dd></div>
-                <div><dt>Expected Profit</dt><dd>${formatCurrency(expected.profit)} SAR</dd></div>
                 <div><dt>Stress Profit</dt><dd>${formatCurrency(stress.profit)} SAR</dd></div>
-                <div><dt>Stress Unbilled</dt><dd>${formatNumber(stress.unbilledAboveCeiling)} pallets</dd></div>
+                <div><dt>Unbilled Pallets</dt><dd>${formatNumber(stress.unbilledAboveCeiling)}</dd></div>
             </dl>
-            <p>${optionComment(status, option)}</p>
-            <button class="option-select" type="button" data-option="${key}">Select option</button>
+            <button class="option-select" type="button" data-option="${key}">Apply</button>
         `;
         container.appendChild(card);
     });
@@ -394,7 +377,7 @@ function updateAllDisplays(sourceId) {
 }
 
 function markCurrentAndUpdate(sourceId) {
-    activeOption = "current";
+    activeOption = "";
     updateAllDisplays(sourceId);
 }
 
@@ -433,7 +416,7 @@ function applyOption(key) {
 }
 
 function resetDefaults() {
-    activeOption = "current";
+    activeOption = "";
     syncAllInputs(DEFAULTS);
     updateAllDisplays();
 }

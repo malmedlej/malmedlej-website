@@ -199,41 +199,10 @@
                     </div>
                     <p id="recommendationText">Proceed with the selected structure. Expected and stress cases remain profitable.</p>
                 </div>
-                <div class="assessment-grid">
-                    <div class="assessment-group">
-                        <h3>Selected Structure</h3>
-                        <dl>
-                            <div><dt>Selected Floor</dt><dd id="selectedFloor">40%</dd></div>
-                            <div><dt>Selected Ceiling</dt><dd id="selectedCeiling">85%</dd></div>
-                            <div><dt>Selected Margin</dt><dd id="selectedMargin">15%</dd></div>
-                            <div><dt>Selected Selling Price</dt><dd id="selectedSellingPrice">45.43 SAR</dd></div>
-                        </dl>
-                    </div>
-                    <div class="assessment-group">
-                        <h3>Expected Case</h3>
-                        <dl>
-                            <div><dt>Expected Utilization</dt><dd id="assessmentExpectedUtil">60%</dd></div>
-                            <div><dt>Monthly Revenue</dt><dd id="assessmentExpectedRevenue">0 SAR</dd></div>
-                            <div><dt>Monthly Cost</dt><dd id="assessmentExpectedCost">0 SAR</dd></div>
-                            <div><dt>Monthly Profit</dt><dd id="assessmentExpectedProfit">0 SAR</dd></div>
-                            <div><dt>Margin</dt><dd id="assessmentExpectedMargin">0.0%</dd></div>
-                        </dl>
-                    </div>
-                    <div class="assessment-group">
-                        <h3>Stress Case</h3>
-                        <dl>
-                            <div><dt>Stress Utilization</dt><dd id="assessmentStressUtil">90%</dd></div>
-                            <div><dt>Monthly Profit</dt><dd id="assessmentStressProfit">0 SAR</dd></div>
-                            <div><dt>Margin</dt><dd id="assessmentStressMargin">0.0%</dd></div>
-                            <div><dt>Unbilled Pallets</dt><dd id="assessmentStressUnbilled">0</dd></div>
-                            <div><dt>Revenue Leakage</dt><dd id="assessmentStressLeakage">0 SAR</dd></div>
-                        </dl>
-                    </div>
-                    <div class="assessment-group decision-group">
-                        <h3>Decision Status</h3>
-                        <strong id="assessmentDecision">Proceed</strong>
-                        <p id="assessmentAdjustment">No adjustment required.</p>
-                    </div>
+                <div class="assessment-summary">
+                    <div><span>Expected Profit</span><strong id="assessmentExpectedProfit">0 SAR</strong></div>
+                    <div><span>Stress Profit</span><strong id="assessmentStressProfit">0 SAR</strong></div>
+                    <div><span>Revenue Leakage</span><strong id="assessmentStressLeakage">0 SAR</strong></div>
                 </div>
             </section>
 
