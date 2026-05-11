@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bonded Warehouse Commercial Simulator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="app-header">
+            <div class="brand-lockup">
+                <div class="logo">
+                    <img src="assets/bahri-logo.svg" alt="Bahri Logistics" class="brand-logo">
+                </div>
+                <div>
+                    <span class="tool-label">Internal Commercial Simulation Tool</span>
+                    <h1>Bonded Warehouse Commercial Simulator</h1>
+                    <p>Bahri Logistics | NUPCO Regional Hub Use Case</p>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <section class="input-panel" aria-labelledby="inputs-title">
+                <div class="section-heading">
+                    <h2 id="inputs-title">Commercial Decision Levers</h2>
+                    <button class="reset-btn" type="button" onclick="resetDefaults()">Reset Defaults</button>
+                </div>
+
+                <div class="validation-message" id="validationMessage" role="alert" hidden></div>
+
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <div class="label-row">
+                            <label for="floor">Floor %</label>
+                            <span>minimum billing commitment</span>
+                        </div>
+                        <div class="input-row">
+                            <input type="range" id="floor" min="0" max="100" value="40" class="slider">
+                            <input type="number" id="floorVal" value="40" min="0" max="100" class="number-input">
+                            <span class="unit">%</span>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="label-row">
+                            <label for="ceiling">Ceiling %</label>
+                            <span>maximum billing cap</span>
+                        </div>
+                        <div class="input-row">
+                            <input type="range" id="ceiling" min="0" max="100" value="85" class="slider">
+                            <input type="number" id="ceilingVal" value="85" min="0" max="100" class="number-input">
+                            <span class="unit">%</span>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="label-row">
+                            <label for="utilization">Utilization %</label>
+                            <span>actual usage</span>
+                        </div>
+                        <div class="input-row">
+                            <input type="range" id="utilization" min="0" max="100" value="40" class="slider">
+                            <input type="number" id="utilizationVal" value="40" min="0" max="100" class="number-input">
+                            <span class="unit">%</span>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="label-row">
+                            <label for="cost">Cost per Pallet / Month</label>
+                            <span>fully loaded cost</span>
+                        </div>
+                        <div class="input-row input-row-compact">
+                            <input type="number" id="cost" value="39.5" min="0.1" step="0.1" class="text-input">
+                            <span class="unit">SAR</span>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="label-row">
+                            <label for="margin">Margin %</label>
+                            <span>target markup over cost</span>
+                        </div>
+                        <div class="input-row">
+                            <input type="range" id="margin" min="0" max="100" value="15" step="0.5" class="slider">
+                            <input type="number" id="marginVal" value="15" min="0" max="100" step="0.5" class="number-input">
+                            <span class="unit">%</span>
+                        </div>
+                    </div>
+
+                    <div class="control-group selling-price-card">
+                        <div class="label-row">
+                            <label>Selling Price per Pallet / Month</label>
+                            <span>cost x (1 + margin %)</span>
+                        </div>
+                        <div class="calculated-value">
+                            <strong id="sellingPrice">45.43</strong>
+                            <span>SAR / pallet / month</span>
+                        </div>
+                    </div>
+
+                    <div class="control-group capacity-control">
+                        <div class="label-row">
+                            <label for="capacity">Total Capacity</label>
+                            <span>editable model base</span>
+                        </div>
+                        <div class="input-row input-row-compact">
+                            <input type="number" id="capacity" value="80000" min="1" step="100" class="text-input">
+                            <span class="unit">pallets</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="capacity-band-card" aria-labelledby="band-title">
+                <div class="section-heading">
+                    <h2 id="band-title">Capacity Band</h2>
+                    <span id="bandStatus" class="status-pill neutral">Within Band</span>
+                </div>
+                <div class="capacity-band" id="capacityBand">
+                    <div class="band-track">
+                        <div class="band-committed" id="bandCommitted"></div>
+                        <div class="band-used" id="bandUsed"></div>
+                        <div class="band-overage" id="bandOverage"></div>
+                        <span class="band-marker floor-marker" id="floorMarker"></span>
+                        <span class="band-marker actual-marker" id="actualMarker"></span>
+                        <span class="band-marker ceiling-marker" id="ceilingMarker"></span>
+                    </div>
+                    <div class="band-labels">
+                        <span id="floorBandLabel">Floor: 40%</span>
+                        <span id="actualBandLabel">Actual: 40%</span>
+                        <span id="ceilingBandLabel">Ceiling: 85%</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="kpi-grid" aria-label="Key performance indicators">
+                <div class="kpi-card neutral">
+                    <div class="kpi-label">Revenue</div>
+                    <div class="kpi-value" id="revenue">0</div>
+                    <div class="kpi-subtext">SAR / month</div>
+                </div>
+                <div class="kpi-card neutral">
+                    <div class="kpi-label">Cost</div>
+                    <div class="kpi-value" id="costDisplay">0</div>
+                    <div class="kpi-subtext">SAR / month</div>
+                </div>
+                <div class="kpi-card" id="profitCard">
+                    <div class="kpi-label">Profit</div>
+                    <div class="kpi-value" id="profit">0</div>
+                    <div class="kpi-subtext">SAR / month</div>
+                </div>
+                <div class="kpi-card" id="marginCard">
+                    <div class="kpi-label">Margin %</div>
+                    <div class="kpi-value" id="actualMargin">0.0%</div>
+                    <div class="kpi-subtext">profit / revenue</div>
+                </div>
+                <div class="kpi-card neutral">
+                    <div class="kpi-label">Charged Pallets</div>
+                    <div class="kpi-value" id="chargedPallets">0</div>
+                    <div class="kpi-subtext" id="chargedSubtext">billing basis</div>
+                </div>
+                <div class="kpi-card neutral">
+                    <div class="kpi-label">Actual Used Pallets</div>
+                    <div class="kpi-value" id="actualUsedPallets">0</div>
+                    <div class="kpi-subtext">usage basis</div>
+                </div>
+                <div class="kpi-card" id="unbilledCard">
+                    <div class="kpi-label">Unbilled Usage Above Ceiling</div>
+                    <div class="kpi-value" id="unbilled">0</div>
+                    <div class="kpi-subtext">pallets</div>
+                </div>
+                <div class="kpi-card" id="leakageCard">
+                    <div class="kpi-label">Revenue Leakage Above Ceiling</div>
+                    <div class="kpi-value" id="revenueLeakage">0</div>
+                    <div class="kpi-subtext">SAR / month</div>
+                </div>
+                <div class="kpi-card" id="riskCard">
+                    <div class="kpi-label">High Utilization Risk</div>
+                    <div class="kpi-value text-value" id="highUtilizationRisk">Low</div>
+                    <div class="kpi-subtext" id="riskSubtext">tested at 90% utilization</div>
+                </div>
+            </section>
+
+            <section class="recommendation-box" id="recommendationBox">
+                <div class="recommendation-main">
+                    <div>
+                        <h2>Recommended Negotiation Zone</h2>
+                        <span class="status-pill" id="recommendationStatus">Acceptable</span>
+                    </div>
+                    <p id="recommendationText">Current structure remains profitable under the tested scenario.</p>
+                </div>
+                <div class="recommendation-metrics">
+                    <div><span>Recommended Floor</span><strong id="recFloor">40%</strong></div>
+                    <div><span>Recommended Ceiling</span><strong id="recCeiling">85%</strong></div>
+                    <div><span>Recommended Margin</span><strong id="recMargin">15%</strong></div>
+                    <div><span>High Utilization Profit</span><strong id="recHighProfit">0 SAR</strong></div>
+                </div>
+            </section>
+
+            <section class="analysis-card" aria-labelledby="scenario-title">
+                <div class="section-heading">
+                    <h2 id="scenario-title">Scenario Analysis</h2>
+                </div>
+                <div class="scenario-controls">
+                    <button class="scenario-btn active" type="button" data-scenario="custom">Custom / Current</button>
+                    <button class="scenario-btn" type="button" data-scenario="low">Low Utilization</button>
+                    <button class="scenario-btn" type="button" data-scenario="high">High Utilization</button>
+                    <button class="scenario-btn" type="button" data-scenario="optimized">Optimized Structure</button>
+                </div>
+                <div class="scenario-layout">
+                    <div class="table-wrapper">
+                        <table class="scenario-table">
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Custom / Current</th>
+                                    <th>Low Utilization</th>
+                                    <th>High Utilization</th>
+                                    <th>Optimized Structure</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scenarioBody"></tbody>
+                        </table>
+                    </div>
+                    <aside class="scenario-insight">
+                        <span>Selected Scenario Insight</span>
+                        <h3 id="insightName">Custom / Current</h3>
+                        <dl>
+                            <div><dt>Profit</dt><dd id="insightProfit">0 SAR</dd></div>
+                            <div><dt>Margin</dt><dd id="insightMargin">0.0%</dd></div>
+                            <div><dt>Risk Status</dt><dd id="insightRisk">Low</dd></div>
+                        </dl>
+                        <p id="insightText">Current manual inputs are reflected in the model.</p>
+                    </aside>
+                </div>
+                <p class="analysis-note">When utilization is below Floor, billing remains at Floor while cost follows actual usage.</p>
+            </section>
+
+            <section class="analysis-card" aria-labelledby="sensitivity-title">
+                <div class="section-heading stacked">
+                    <h2 id="sensitivity-title">Ceiling Risk Sensitivity at High Utilization</h2>
+                    <p>Profit shown at 90% utilization to test downside risk when billing is capped.</p>
+                </div>
+                <div class="table-wrapper sensitivity-wrapper">
+                    <table class="sensitivity-table">
+                        <thead>
+                            <tr>
+                                <th>Margin %</th>
+                                <th>70%</th>
+                                <th>75%</th>
+                                <th>80%</th>
+                                <th>85%</th>
+                                <th>90%</th>
+                                <th>95%</th>
+                                <th>100%</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sensitivityBody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>Internal decision-support tool. Indicative values only. Excludes VAT and contractual terms.</p>
+            <p>Generated: <span id="timestamp"></span></p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
