@@ -1,6 +1,8 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/malmedlej/public_html
+    - export DEPLOYPATH=/home/malmedlej/public_html/dashboard
+    - /bin/mkdir -p $DEPLOYPATH
     - /bin/rm -rf $DEPLOYPATH/*
     - /bin/cp -R /home/malmedlej/malmedlej-website/dashboard/* $DEPLOYPATH/
+    
