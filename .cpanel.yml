@@ -4,5 +4,5 @@ deployment:
     - export DEPLOYPATH=/home/malmedlej/public_html/dashboard
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/rm -rf $DEPLOYPATH/*
-    - /bin/cp -R /home/malmedlej/malmedlej-website/dashboard/* $DEPLOYPATH/
+    - /bin/cp -R dashboard/. $DEPLOYPATH/
     
