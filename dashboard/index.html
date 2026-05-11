@@ -10,13 +10,9 @@
     <div class="container">
         <header class="app-header">
             <div class="brand-lockup">
-                <div class="logo">
-                    <img src="assets/bahri-logo.svg" alt="Bahri Logistics" class="brand-logo">
-                </div>
                 <div>
-                    <span class="tool-label">Internal Commercial Simulation Tool</span>
                     <h1>Bonded Warehouse Commercial Simulator</h1>
-                    <p>Bahri Logistics | NUPCO Regional Hub Use Case</p>
+                    <p>NUPCO Regional Hub Use Case</p>
                 </div>
             </div>
         </header>
@@ -57,12 +53,24 @@
 
                     <div class="control-group">
                         <div class="label-row">
-                            <label for="utilization">Utilization %</label>
-                            <span>actual usage</span>
+                            <label for="expectedUtilization">Expected Utilization %</label>
+                            <span>expected operating case</span>
                         </div>
                         <div class="input-row">
-                            <input type="range" id="utilization" min="0" max="100" value="40" class="slider">
-                            <input type="number" id="utilizationVal" value="40" min="0" max="100" class="number-input">
+                            <input type="range" id="expectedUtilization" min="0" max="100" value="60" class="slider">
+                            <input type="number" id="expectedUtilizationVal" value="60" min="0" max="100" class="number-input">
+                            <span class="unit">%</span>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="label-row">
+                            <label for="stressUtilization">Stress Utilization %</label>
+                            <span>high-use risk test</span>
+                        </div>
+                        <div class="input-row">
+                            <input type="range" id="stressUtilization" min="0" max="100" value="90" class="slider">
+                            <input type="number" id="stressUtilizationVal" value="90" min="0" max="100" class="number-input">
                             <span class="unit">%</span>
                         </div>
                     </div>
@@ -120,17 +128,19 @@
                     <span id="bandStatus" class="status-pill neutral">Within Band</span>
                 </div>
                 <div class="capacity-band" id="capacityBand">
-                    <div class="band-track">
-                        <div class="band-committed" id="bandCommitted"></div>
-                        <div class="band-used" id="bandUsed"></div>
-                        <div class="band-overage" id="bandOverage"></div>
-                        <span class="band-marker floor-marker" id="floorMarker"></span>
-                        <span class="band-marker actual-marker" id="actualMarker"></span>
-                        <span class="band-marker ceiling-marker" id="ceilingMarker"></span>
-                    </div>
+                        <div class="band-track">
+                            <div class="band-committed" id="bandCommitted"></div>
+                            <div class="band-used" id="bandUsed"></div>
+                            <div class="band-overage" id="bandOverage"></div>
+                            <span class="band-marker floor-marker" id="floorMarker"></span>
+                            <span class="band-marker expected-marker" id="expectedMarker"></span>
+                            <span class="band-marker stress-marker" id="stressMarker"></span>
+                            <span class="band-marker ceiling-marker" id="ceilingMarker"></span>
+                        </div>
                     <div class="band-labels">
                         <span id="floorBandLabel">Floor: 40%</span>
-                        <span id="actualBandLabel">Actual: 40%</span>
+                        <span id="expectedBandLabel">Expected: 60%</span>
+                        <span id="stressBandLabel">Stress: 90%</span>
                         <span id="ceilingBandLabel">Ceiling: 85%</span>
                     </div>
                 </div>
@@ -138,136 +148,104 @@
 
             <section class="kpi-grid" aria-label="Key performance indicators">
                 <div class="kpi-card neutral">
-                    <div class="kpi-label">Revenue</div>
+                    <div class="kpi-label">Expected Revenue</div>
                     <div class="kpi-value" id="revenue">0</div>
                     <div class="kpi-subtext">SAR / month</div>
                 </div>
                 <div class="kpi-card neutral">
-                    <div class="kpi-label">Cost</div>
+                    <div class="kpi-label">Expected Cost</div>
                     <div class="kpi-value" id="costDisplay">0</div>
                     <div class="kpi-subtext">SAR / month</div>
                 </div>
                 <div class="kpi-card" id="profitCard">
-                    <div class="kpi-label">Profit</div>
+                    <div class="kpi-label">Expected Profit</div>
                     <div class="kpi-value" id="profit">0</div>
                     <div class="kpi-subtext">SAR / month</div>
                 </div>
                 <div class="kpi-card" id="marginCard">
-                    <div class="kpi-label">Margin %</div>
+                    <div class="kpi-label">Expected Margin %</div>
                     <div class="kpi-value" id="actualMargin">0.0%</div>
                     <div class="kpi-subtext">profit / revenue</div>
                 </div>
                 <div class="kpi-card neutral">
-                    <div class="kpi-label">Charged Pallets</div>
+                    <div class="kpi-label">Charged Pallets at Expected</div>
                     <div class="kpi-value" id="chargedPallets">0</div>
                     <div class="kpi-subtext" id="chargedSubtext">billing basis</div>
                 </div>
                 <div class="kpi-card neutral">
-                    <div class="kpi-label">Actual Used Pallets</div>
+                    <div class="kpi-label">Used Pallets at Expected</div>
                     <div class="kpi-value" id="actualUsedPallets">0</div>
                     <div class="kpi-subtext">usage basis</div>
-                </div>
-                <div class="kpi-card" id="unbilledCard">
-                    <div class="kpi-label">Unbilled Usage Above Ceiling</div>
-                    <div class="kpi-value" id="unbilled">0</div>
-                    <div class="kpi-subtext">pallets</div>
                 </div>
                 <div class="kpi-card" id="leakageCard">
                     <div class="kpi-label">Revenue Leakage Above Ceiling</div>
                     <div class="kpi-value" id="revenueLeakage">0</div>
-                    <div class="kpi-subtext">SAR / month</div>
+                    <div class="kpi-subtext">stress case SAR / month</div>
                 </div>
-                <div class="kpi-card" id="riskCard">
-                    <div class="kpi-label">High Utilization Risk</div>
-                    <div class="kpi-value text-value" id="highUtilizationRisk">Low</div>
-                    <div class="kpi-subtext" id="riskSubtext">tested at 90% utilization</div>
+                <div class="kpi-card stress-kpi" id="riskCard">
+                    <div class="kpi-label">Stress Case Result</div>
+                    <div class="kpi-value text-value" id="stressProfit">0 SAR</div>
+                    <div class="kpi-subtext" id="riskSubtext">At 90% utilization</div>
+                    <div class="kpi-subtext" id="stressUnbilled">Unbilled above ceiling: 0 pallets</div>
+                    <div class="kpi-subtext decision-line" id="stressDecision">Decision: Proceed</div>
                 </div>
             </section>
 
-            <section class="recommendation-box" id="recommendationBox">
-                <div class="recommendation-main">
+            <section class="recommendation-box assessment-box" id="recommendationBox">
+                <div class="recommendation-main assessment-main">
                     <div>
-                        <h2>Recommended Negotiation Zone</h2>
-                        <span class="status-pill" id="recommendationStatus">Acceptable</span>
+                        <h2>Executive Assessment</h2>
+                        <span class="status-pill" id="recommendationStatus">Proceed</span>
                     </div>
-                    <p id="recommendationText">Current structure remains profitable under the tested scenario.</p>
+                    <p id="recommendationText">Proceed with the selected structure. Expected and stress cases remain profitable.</p>
                 </div>
-                <div class="recommendation-metrics">
-                    <div><span>Recommended Floor</span><strong id="recFloor">40%</strong></div>
-                    <div><span>Recommended Ceiling</span><strong id="recCeiling">85%</strong></div>
-                    <div><span>Recommended Margin</span><strong id="recMargin">15%</strong></div>
-                    <div><span>High Utilization Profit</span><strong id="recHighProfit">0 SAR</strong></div>
-                </div>
-            </section>
-
-            <section class="analysis-card" aria-labelledby="scenario-title">
-                <div class="section-heading">
-                    <h2 id="scenario-title">Scenario Analysis</h2>
-                </div>
-                <div class="scenario-controls">
-                    <button class="scenario-btn active" type="button" data-scenario="custom">Custom / Current</button>
-                    <button class="scenario-btn" type="button" data-scenario="low">Low Utilization</button>
-                    <button class="scenario-btn" type="button" data-scenario="high">High Utilization</button>
-                    <button class="scenario-btn" type="button" data-scenario="optimized">Optimized Structure</button>
-                </div>
-                <div class="scenario-layout">
-                    <div class="table-wrapper">
-                        <table class="scenario-table">
-                            <thead>
-                                <tr>
-                                    <th>Metric</th>
-                                    <th>Custom / Current</th>
-                                    <th>Low Utilization</th>
-                                    <th>High Utilization</th>
-                                    <th>Optimized Structure</th>
-                                </tr>
-                            </thead>
-                            <tbody id="scenarioBody"></tbody>
-                        </table>
-                    </div>
-                    <aside class="scenario-insight">
-                        <span>Selected Scenario Insight</span>
-                        <h3 id="insightName">Custom / Current</h3>
+                <div class="assessment-grid">
+                    <div class="assessment-group">
+                        <h3>Selected Structure</h3>
                         <dl>
-                            <div><dt>Profit</dt><dd id="insightProfit">0 SAR</dd></div>
-                            <div><dt>Margin</dt><dd id="insightMargin">0.0%</dd></div>
-                            <div><dt>Risk Status</dt><dd id="insightRisk">Low</dd></div>
+                            <div><dt>Selected Floor</dt><dd id="selectedFloor">40%</dd></div>
+                            <div><dt>Selected Ceiling</dt><dd id="selectedCeiling">85%</dd></div>
+                            <div><dt>Selected Margin</dt><dd id="selectedMargin">15%</dd></div>
+                            <div><dt>Selected Selling Price</dt><dd id="selectedSellingPrice">45.43 SAR</dd></div>
                         </dl>
-                        <p id="insightText">Current manual inputs are reflected in the model.</p>
-                    </aside>
+                    </div>
+                    <div class="assessment-group">
+                        <h3>Expected Case</h3>
+                        <dl>
+                            <div><dt>Expected Utilization</dt><dd id="assessmentExpectedUtil">60%</dd></div>
+                            <div><dt>Monthly Revenue</dt><dd id="assessmentExpectedRevenue">0 SAR</dd></div>
+                            <div><dt>Monthly Cost</dt><dd id="assessmentExpectedCost">0 SAR</dd></div>
+                            <div><dt>Monthly Profit</dt><dd id="assessmentExpectedProfit">0 SAR</dd></div>
+                            <div><dt>Margin</dt><dd id="assessmentExpectedMargin">0.0%</dd></div>
+                        </dl>
+                    </div>
+                    <div class="assessment-group">
+                        <h3>Stress Case</h3>
+                        <dl>
+                            <div><dt>Stress Utilization</dt><dd id="assessmentStressUtil">90%</dd></div>
+                            <div><dt>Monthly Profit</dt><dd id="assessmentStressProfit">0 SAR</dd></div>
+                            <div><dt>Margin</dt><dd id="assessmentStressMargin">0.0%</dd></div>
+                            <div><dt>Unbilled Pallets</dt><dd id="assessmentStressUnbilled">0</dd></div>
+                            <div><dt>Revenue Leakage</dt><dd id="assessmentStressLeakage">0 SAR</dd></div>
+                        </dl>
+                    </div>
+                    <div class="assessment-group decision-group">
+                        <h3>Decision Status</h3>
+                        <strong id="assessmentDecision">Proceed</strong>
+                        <p id="assessmentAdjustment">No adjustment required.</p>
+                    </div>
                 </div>
-                <p class="analysis-note">When utilization is below Floor, billing remains at Floor while cost follows actual usage.</p>
             </section>
 
-            <section class="analysis-card" aria-labelledby="sensitivity-title">
-                <div class="section-heading stacked">
-                    <h2 id="sensitivity-title">Ceiling Risk Sensitivity at High Utilization</h2>
-                    <p>Profit shown at 90% utilization to test downside risk when billing is capped.</p>
+            <section class="analysis-card" aria-labelledby="options-title">
+                <div class="section-heading">
+                    <h2 id="options-title">Commercial Options</h2>
                 </div>
-                <div class="table-wrapper sensitivity-wrapper">
-                    <table class="sensitivity-table">
-                        <thead>
-                            <tr>
-                                <th>Margin %</th>
-                                <th>70%</th>
-                                <th>75%</th>
-                                <th>80%</th>
-                                <th>85%</th>
-                                <th>90%</th>
-                                <th>95%</th>
-                                <th>100%</th>
-                            </tr>
-                        </thead>
-                        <tbody id="sensitivityBody"></tbody>
-                    </table>
+                <p class="analysis-note">Compare practical structures and select the offer to take to NUPCO.</p>
+                <div class="option-card-grid" id="optionCards">
                 </div>
             </section>
         </main>
-
-        <footer class="footer">
-            <p>Internal decision-support tool. Indicative values only. Excludes VAT and contractual terms.</p>
-            <p>Generated: <span id="timestamp"></span></p>
-        </footer>
     </div>
 
     <script src="script.js"></script>

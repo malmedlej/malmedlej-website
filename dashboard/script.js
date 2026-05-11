@@ -4,17 +4,46 @@ const DEFAULTS = {
     margin: 15,
     floor: 40,
     ceiling: 85,
-    utilization: 40
+    expectedUtilization: 60,
+    stressUtilization: 90
 };
 
-const SCENARIOS = {
-    custom: { name: "Custom / Current" },
-    low: { name: "Low Utilization", utilization: 20 },
-    high: { name: "High Utilization", utilization: 90 },
-    optimized: { name: "Optimized Structure", floor: 40, ceiling: 85, margin: 15, utilization: 85 }
+const OPTION_KEYS = ["current", "lower", "balanced", "higherCeiling", "fullBilling"];
+
+const COMMERCIAL_OPTIONS = {
+    current: {
+        name: "Current Structure",
+        comment: "Uses the selected commercial levers."
+    },
+    lower: {
+        name: "Lower Commitment",
+        floor: 30,
+        comment: "Reduces minimum commitment while keeping current cap and margin."
+    },
+    balanced: {
+        name: "Balanced Offer",
+        floor: 40,
+        ceiling: 85,
+        margin: 20,
+        comment: "Improves margin while keeping a familiar floor and ceiling."
+    },
+    higherCeiling: {
+        name: "Higher Ceiling",
+        floor: 40,
+        ceiling: 90,
+        margin: 20,
+        comment: "Captures more high-use volume with stronger pricing."
+    },
+    fullBilling: {
+        name: "Full Billing",
+        floor: 40,
+        ceiling: 100,
+        margin: 15,
+        comment: "Removes above-ceiling leakage while keeping a moderate margin."
+    }
 };
 
-let activeScenario = "custom";
+let activeOption = "current";
 
 function byId(id) {
     return document.getElementById(id);
@@ -58,7 +87,8 @@ function getInputs() {
     return {
         floor: numberValue("floor", DEFAULTS.floor),
         ceiling: numberValue("ceiling", DEFAULTS.ceiling),
-        utilization: numberValue("utilization", DEFAULTS.utilization),
+        expectedUtilization: numberValue("expectedUtilization", DEFAULTS.expectedUtilization),
+        stressUtilization: numberValue("stressUtilization", DEFAULTS.stressUtilization),
         margin: numberValue("margin", DEFAULTS.margin),
         capacity: numberValue("capacity", DEFAULTS.capacity),
         cost: numberValue("cost", DEFAULTS.cost)
@@ -77,7 +107,8 @@ function syncPair(sliderId, numberId, value) {
 function syncAllInputs(values) {
     syncPair("floor", "floorVal", values.floor);
     syncPair("ceiling", "ceilingVal", values.ceiling);
-    syncPair("utilization", "utilizationVal", values.utilization);
+    syncPair("expectedUtilization", "expectedUtilizationVal", values.expectedUtilization);
+    syncPair("stressUtilization", "stressUtilizationVal", values.stressUtilization);
     syncPair("margin", "marginVal", values.margin);
     setField("capacity", values.capacity);
     setField("cost", values.cost);
@@ -90,13 +121,15 @@ function sanitizeInputs(sourceId) {
     const clean = {
         floor: clamp(raw.floor, 0, 100),
         ceiling: clamp(raw.ceiling, 0, 100),
-        utilization: clamp(raw.utilization, 0, 100),
+        expectedUtilization: clamp(raw.expectedUtilization, 0, 100),
+        stressUtilization: clamp(raw.stressUtilization, 0, 100),
         margin: Math.max(0, raw.margin),
         capacity: Math.max(1, raw.capacity),
         cost: Math.max(0.01, raw.cost)
     };
 
-    if (clean.utilization !== raw.utilization) warnings.push("Utilization must be between 0% and 100%.");
+    if (clean.expectedUtilization !== raw.expectedUtilization) warnings.push("Expected Utilization must be between 0% and 100%.");
+    if (clean.stressUtilization !== raw.stressUtilization) warnings.push("Stress Utilization must be between 0% and 100%.");
     if (clean.margin !== raw.margin) warnings.push("Margin % cannot be below 0%.");
     if (clean.capacity !== raw.capacity) warnings.push("Total Capacity must be greater than 0.");
     if (clean.cost !== raw.cost) warnings.push("Cost per Pallet must be greater than 0.");
@@ -127,280 +160,241 @@ function showValidation(warnings) {
     }
 }
 
-function calculate(values) {
-    const utilization = clamp(values.utilization, 0, 100);
-    const floor = clamp(values.floor, 0, 100);
-    const ceiling = clamp(values.ceiling, 0, 100);
-    const margin = Math.max(0, values.margin);
-    const capacity = Math.max(1, values.capacity);
-    const costPerPallet = Math.max(0.01, values.cost);
+function sellingPrice(values) {
+    return values.cost * (1 + values.margin / 100);
+}
 
-    const floorPallets = Math.round(capacity * floor / 100);
-    const ceilingPallets = Math.round(capacity * ceiling / 100);
-    const actualUsedPallets = Math.round(capacity * utilization / 100);
-    const chargedPallets = Math.min(Math.max(actualUsedPallets, floorPallets), ceilingPallets);
-    const sellingPrice = costPerPallet * (1 + margin / 100);
-    const revenue = chargedPallets * sellingPrice;
-    const totalCost = actualUsedPallets * costPerPallet;
+function calculateCase(values, utilization) {
+    const clean = {
+        floor: clamp(values.floor, 0, 100),
+        ceiling: clamp(values.ceiling, 0, 100),
+        utilization: clamp(utilization, 0, 100),
+        margin: Math.max(0, values.margin),
+        capacity: Math.max(1, values.capacity),
+        cost: Math.max(0.01, values.cost)
+    };
+
+    const floorPallets = Math.round(clean.capacity * clean.floor / 100);
+    const ceilingPallets = Math.round(clean.capacity * clean.ceiling / 100);
+    const usedPallets = Math.round(clean.capacity * clean.utilization / 100);
+    const chargedPallets = Math.min(Math.max(usedPallets, floorPallets), ceilingPallets);
+    const price = sellingPrice(clean);
+    const revenue = chargedPallets * price;
+    const totalCost = usedPallets * clean.cost;
     const profit = revenue - totalCost;
-    const actualMargin = revenue > 0 ? profit / revenue * 100 : 0;
-    const unbilledAboveCeiling = Math.max(actualUsedPallets - ceilingPallets, 0);
-    const revenueLeakage = unbilledAboveCeiling * sellingPrice;
+    const marginPercent = revenue > 0 ? profit / revenue * 100 : 0;
+    const unbilledAboveCeiling = Math.max(usedPallets - ceilingPallets, 0);
+    const revenueLeakage = unbilledAboveCeiling * price;
 
     return {
-        utilization,
-        floor,
-        ceiling,
-        margin,
-        capacity,
-        costPerPallet,
+        ...clean,
         floorPallets,
         ceilingPallets,
-        actualUsedPallets,
+        usedPallets,
         chargedPallets,
-        sellingPrice,
+        sellingPrice: price,
         revenue,
         totalCost,
         profit,
-        actualMargin,
+        marginPercent,
         unbilledAboveCeiling,
         revenueLeakage
     };
 }
 
-function highUtilizationResult(values) {
-    return calculate({ ...values, utilization: 90 });
+function evaluateStructure(values) {
+    return {
+        expected: calculateCase(values, values.expectedUtilization),
+        stress: calculateCase(values, values.stressUtilization)
+    };
 }
 
-function riskStatus(result) {
-    if (result.profit < 0 || result.unbilledAboveCeiling > 0) return "High";
-    if (result.actualMargin < 10 || result.utilization >= result.ceiling) return "Caution";
-    return "Low";
+function decisionStatus(stressResult) {
+    if (stressResult.profit < 0) return "Not Recommended";
+    if (stressResult.profit > 0 && stressResult.marginPercent < 10) return "Revise Pricing";
+    return "Proceed";
 }
 
 function statusClass(status) {
-    if (status === "High") return "risk";
-    if (status === "Caution") return "warning";
+    if (status === "Not Recommended") return "risk";
+    if (status === "Revise Pricing") return "warning";
     return "positive";
 }
 
-function setKpiClass(id, status) {
+function setCardClass(id, status) {
     const card = byId(id);
     card.classList.remove("positive", "warning", "negative", "risk", "neutral");
     card.classList.add(status);
 }
 
-function updateKpis(result, highResult) {
-    byId("sellingPrice").textContent = formatPrice(result.sellingPrice);
-    byId("revenue").textContent = formatCurrency(result.revenue);
-    byId("costDisplay").textContent = formatCurrency(result.totalCost);
-    byId("profit").textContent = formatCurrency(result.profit);
-    byId("actualMargin").textContent = formatPercent(result.actualMargin);
-    byId("chargedPallets").textContent = formatNumber(result.chargedPallets);
-    byId("chargedSubtext").textContent = `floor ${formatNumber(result.floorPallets)} | ceiling ${formatNumber(result.ceilingPallets)}`;
-    byId("actualUsedPallets").textContent = formatNumber(result.actualUsedPallets);
-    byId("unbilled").textContent = formatNumber(result.unbilledAboveCeiling);
-    byId("revenueLeakage").textContent = formatCurrency(result.revenueLeakage);
-
-    const risk = riskStatus(highResult);
-    byId("highUtilizationRisk").textContent = risk;
-    byId("riskSubtext").textContent = `90% profit ${formatCurrency(highResult.profit)} SAR`;
-
-    setKpiClass("profitCard", result.profit < 0 ? "negative" : "positive");
-    setKpiClass("marginCard", result.actualMargin < 0 ? "negative" : result.actualMargin < 10 ? "warning" : "positive");
-    setKpiClass("unbilledCard", result.unbilledAboveCeiling > 0 ? "warning" : "neutral");
-    setKpiClass("leakageCard", result.revenueLeakage > 0 ? "warning" : "neutral");
-    setKpiClass("riskCard", statusClass(risk));
+function optionValues(base, key) {
+    const option = COMMERCIAL_OPTIONS[key];
+    return {
+        ...base,
+        floor: option.floor ?? base.floor,
+        ceiling: option.ceiling ?? base.ceiling,
+        margin: option.margin ?? base.margin
+    };
 }
 
-function updateCapacityBand(result) {
-    const floorPct = clamp(result.floor, 0, 100);
-    const actualPct = clamp(result.utilization, 0, 100);
-    const ceilingPct = clamp(result.ceiling, 0, 100);
-    const visibleActual = Math.min(actualPct, ceilingPct);
-    const overage = Math.max(actualPct - ceilingPct, 0);
+function recommendationText(status) {
+    if (status === "Not Recommended") {
+        return "Not recommended. Stress case becomes loss-making; increase margin or raise the ceiling before offering.";
+    }
+    if (status === "Revise Pricing") {
+        return "Revise pricing. Stress case remains positive, but margin is below target.";
+    }
+    return "Proceed with the selected structure. Expected and stress cases remain profitable.";
+}
+
+function adjustmentText(status) {
+    if (status === "Not Recommended") return "Suggested adjustment: increase margin or raise the ceiling.";
+    if (status === "Revise Pricing") return "Suggested adjustment: increase margin.";
+    return "No adjustment required.";
+}
+
+function updateKpis(values, expected, stress, status) {
+    byId("sellingPrice").textContent = formatPrice(expected.sellingPrice);
+    byId("revenue").textContent = formatCurrency(expected.revenue);
+    byId("costDisplay").textContent = formatCurrency(expected.totalCost);
+    byId("profit").textContent = formatCurrency(expected.profit);
+    byId("actualMargin").textContent = formatPercent(expected.marginPercent);
+    byId("chargedPallets").textContent = formatNumber(expected.chargedPallets);
+    byId("chargedSubtext").textContent = `floor ${formatNumber(expected.floorPallets)} | ceiling ${formatNumber(expected.ceilingPallets)}`;
+    byId("actualUsedPallets").textContent = formatNumber(expected.usedPallets);
+    byId("revenueLeakage").textContent = formatCurrency(stress.revenueLeakage);
+    byId("stressProfit").textContent = `${formatCurrency(stress.profit)} SAR`;
+    byId("riskSubtext").textContent = `At ${formatPercent(values.stressUtilization)} utilization`;
+    byId("stressUnbilled").textContent = `Unbilled above ceiling: ${formatNumber(stress.unbilledAboveCeiling)} pallets`;
+    byId("stressDecision").textContent = `Decision: ${status}`;
+
+    setCardClass("profitCard", expected.profit < 0 ? "negative" : "positive");
+    setCardClass("marginCard", expected.marginPercent < 0 ? "negative" : expected.marginPercent < 10 ? "warning" : "positive");
+    setCardClass("leakageCard", stress.revenueLeakage > 0 ? "warning" : "neutral");
+    setCardClass("riskCard", statusClass(status));
+}
+
+function updateCapacityBand(values, expected, stress) {
+    const floorPct = clamp(values.floor, 0, 100);
+    const expectedPct = clamp(values.expectedUtilization, 0, 100);
+    const stressPct = clamp(values.stressUtilization, 0, 100);
+    const ceilingPct = clamp(values.ceiling, 0, 100);
+    const visibleExpected = Math.min(expectedPct, ceilingPct);
+    const overage = Math.max(stressPct - ceilingPct, 0);
 
     byId("bandCommitted").style.width = `${floorPct}%`;
     byId("bandUsed").style.left = "0%";
-    byId("bandUsed").style.width = `${visibleActual}%`;
-    byId("bandUsed").classList.toggle("within", actualPct >= floorPct && actualPct <= ceilingPct);
+    byId("bandUsed").style.width = `${visibleExpected}%`;
+    byId("bandUsed").classList.toggle("within", expectedPct >= floorPct && expectedPct <= ceilingPct);
     byId("bandOverage").style.left = `${ceilingPct}%`;
     byId("bandOverage").style.width = `${overage}%`;
     byId("floorMarker").style.left = `${floorPct}%`;
-    byId("actualMarker").style.left = `${actualPct}%`;
+    byId("expectedMarker").style.left = `${expectedPct}%`;
+    byId("stressMarker").style.left = `${stressPct}%`;
     byId("ceilingMarker").style.left = `${ceilingPct}%`;
     byId("floorBandLabel").textContent = `Floor: ${formatPercent(floorPct)}`;
-    byId("actualBandLabel").textContent = `Actual: ${formatPercent(actualPct)}`;
+    byId("expectedBandLabel").textContent = `Expected: ${formatPercent(expectedPct)}`;
+    byId("stressBandLabel").textContent = `Stress: ${formatPercent(stressPct)}`;
     byId("ceilingBandLabel").textContent = `Ceiling: ${formatPercent(ceilingPct)}`;
 
     const status = byId("bandStatus");
     status.className = "status-pill";
-    if (actualPct > ceilingPct) {
-        status.textContent = "Above Ceiling";
-        status.classList.add("high");
-    } else if (actualPct < floorPct) {
-        status.textContent = "Below Floor";
-        status.classList.add("caution");
+    if (stress.unbilledAboveCeiling > 0) {
+        status.textContent = "Stress Above Ceiling";
+        status.classList.add("warning");
+    } else if (expected.usedPallets < expected.floorPallets) {
+        status.textContent = "Expected Below Floor";
+        status.classList.add("warning");
     } else {
-        status.textContent = "Within Band";
-        status.classList.add("acceptable");
+        status.textContent = "Within Structure";
+        status.classList.add("positive");
     }
 }
 
-function scenarioValues(base, key) {
-    if (key === "custom") return { ...base };
-    if (key === "low") return { ...base, utilization: 20 };
-    if (key === "high") return { ...base, utilization: 90 };
-    return { ...base, floor: 40, ceiling: 85, margin: 15, utilization: 85 };
-}
-
-function scenarioExplanation(key, result) {
-    if (key === "low") return "Low utilization benefits from floor billing while cost follows actual usage.";
-    if (key === "high") return result.unbilledAboveCeiling > 0
-        ? "High usage exceeds the billing ceiling, creating unbilled usage."
-        : "High usage remains within the commercial ceiling.";
-    if (key === "optimized") return "Optimized structure tests a 40% floor, 85% ceiling, and 15% margin.";
-    return "Current manual inputs are reflected in the model.";
-}
-
-function updateScenarioTable(values) {
-    const rows = [
-        ["Utilization %", result => formatPercent(result.utilization)],
-        ["Actual Used Pallets", result => formatNumber(result.actualUsedPallets)],
-        ["Charged Pallets", result => formatNumber(result.chargedPallets)],
-        ["Revenue", result => `${formatCurrency(result.revenue)} SAR`],
-        ["Cost", result => `${formatCurrency(result.totalCost)} SAR`],
-        ["Profit", result => `${formatCurrency(result.profit)} SAR`],
-        ["Margin %", result => formatPercent(result.actualMargin)],
-        ["Risk Status", result => riskStatus(result)]
-    ];
-    const keys = ["custom", "low", "high", "optimized"];
-    const results = keys.map(key => calculate(scenarioValues(values, key)));
-    const body = byId("scenarioBody");
-
-    body.innerHTML = "";
-    rows.forEach(([label, formatter]) => {
-        const tr = document.createElement("tr");
-        const th = document.createElement("td");
-        th.textContent = label;
-        tr.appendChild(th);
-
-        results.forEach(result => {
-            const td = document.createElement("td");
-            td.textContent = formatter(result);
-            tr.appendChild(td);
-        });
-
-        body.appendChild(tr);
-    });
-
-    const activeIndex = keys.indexOf(activeScenario);
-    const selectedKey = activeIndex >= 0 ? activeScenario : "custom";
-    const selected = results[activeIndex >= 0 ? activeIndex : 0];
-    const selectedRisk = riskStatus(selected);
-
-    byId("insightName").textContent = SCENARIOS[selectedKey].name;
-    byId("insightProfit").textContent = `${formatCurrency(selected.profit)} SAR`;
-    byId("insightMargin").textContent = formatPercent(selected.actualMargin);
-    byId("insightRisk").textContent = selectedRisk;
-    byId("insightText").textContent = scenarioExplanation(selectedKey, selected);
-}
-
-function updateSensitivityTable(values) {
-    const margins = [5, 10, 15, 20, 25, 30];
-    const ceilings = [70, 75, 80, 85, 90, 95, 100];
-    const body = byId("sensitivityBody");
-    body.innerHTML = "";
-
-    margins.forEach(margin => {
-        const tr = document.createElement("tr");
-        const rowLabel = document.createElement("td");
-        rowLabel.textContent = `${margin}%`;
-        tr.appendChild(rowLabel);
-
-        ceilings.forEach(ceiling => {
-            const result = calculate({
-                ...values,
-                margin,
-                ceiling,
-                utilization: 90
-            });
-            const td = document.createElement("td");
-            td.textContent = formatCurrency(result.profit);
-            td.className = result.profit < 0
-                ? "negative-cell"
-                : result.actualMargin < 10
-                    ? "caution-cell"
-                    : "healthy-cell";
-            tr.appendChild(td);
-        });
-
-        body.appendChild(tr);
-    });
-}
-
-function updateRecommendation(values, highResult) {
+function updateAssessment(values, expected, stress, status) {
     const box = byId("recommendationBox");
-    const status = byId("recommendationStatus");
-    const text = byId("recommendationText");
+    const pill = byId("recommendationStatus");
 
-    box.classList.remove("caution", "high-risk");
-    status.className = "status-pill";
+    box.classList.remove("caution", "high-risk", "positive");
+    pill.className = `status-pill ${statusClass(status)}`;
+    pill.textContent = status;
+    box.classList.add(statusClass(status) === "risk" ? "high-risk" : statusClass(status) === "warning" ? "caution" : "positive");
 
-    if (highResult.profit < 0) {
-        box.classList.add("high-risk");
-        status.classList.add("high");
-        status.textContent = "High Risk";
-        text.textContent = "At high utilization, the current ceiling/margin combination becomes loss-making. Increase Ceiling %, increase Margin %, or limit unbilled usage.";
-    } else if (values.margin < 10) {
-        box.classList.add("caution");
-        status.classList.add("caution");
-        status.textContent = "Caution";
-        text.textContent = "Profit remains positive, but margin is thin. Review pricing before committing.";
-    } else {
-        status.classList.add("acceptable");
-        status.textContent = "Acceptable";
-        text.textContent = "Current structure remains profitable under the tested scenario.";
-    }
-
-    byId("recFloor").textContent = formatPercent(values.floor);
-    byId("recCeiling").textContent = formatPercent(Math.max(values.ceiling, values.floor));
-    byId("recMargin").textContent = formatPercent(values.margin);
-    byId("recHighProfit").textContent = `${formatCurrency(highResult.profit)} SAR`;
+    byId("recommendationText").textContent = recommendationText(status);
+    byId("selectedFloor").textContent = formatPercent(values.floor);
+    byId("selectedCeiling").textContent = formatPercent(values.ceiling);
+    byId("selectedMargin").textContent = formatPercent(values.margin);
+    byId("selectedSellingPrice").textContent = `${formatPrice(expected.sellingPrice)} SAR`;
+    byId("assessmentExpectedUtil").textContent = formatPercent(values.expectedUtilization);
+    byId("assessmentExpectedRevenue").textContent = `${formatCurrency(expected.revenue)} SAR`;
+    byId("assessmentExpectedCost").textContent = `${formatCurrency(expected.totalCost)} SAR`;
+    byId("assessmentExpectedProfit").textContent = `${formatCurrency(expected.profit)} SAR`;
+    byId("assessmentExpectedMargin").textContent = formatPercent(expected.marginPercent);
+    byId("assessmentStressUtil").textContent = formatPercent(values.stressUtilization);
+    byId("assessmentStressProfit").textContent = `${formatCurrency(stress.profit)} SAR`;
+    byId("assessmentStressMargin").textContent = formatPercent(stress.marginPercent);
+    byId("assessmentStressUnbilled").textContent = formatNumber(stress.unbilledAboveCeiling);
+    byId("assessmentStressLeakage").textContent = `${formatCurrency(stress.revenueLeakage)} SAR`;
+    byId("assessmentDecision").textContent = status;
+    byId("assessmentDecision").className = statusClass(status);
+    byId("assessmentAdjustment").textContent = adjustmentText(status);
 }
 
-function updateScenarioButtons() {
-    document.querySelectorAll(".scenario-btn").forEach(button => {
-        button.classList.toggle("active", button.dataset.scenario === activeScenario);
+function optionComment(status, option) {
+    if (status === "Not Recommended") return "Stress case is loss-making; revise before offering.";
+    if (status === "Revise Pricing") return "Positive stress profit, but margin is below target.";
+    return option.comment;
+}
+
+function renderCommercialOptions(values) {
+    const container = byId("optionCards");
+    container.innerHTML = "";
+
+    OPTION_KEYS.forEach(key => {
+        const option = COMMERCIAL_OPTIONS[key];
+        const candidate = optionValues(values, key);
+        const { expected, stress } = evaluateStructure(candidate);
+        const status = decisionStatus(stress);
+        const card = document.createElement("article");
+        card.className = `option-card ${statusClass(status)} ${key === activeOption ? "active" : ""}`;
+        card.innerHTML = `
+            <div class="option-card-header">
+                <h3>${option.name}</h3>
+                <span class="status-pill ${statusClass(status)}">${status}</span>
+            </div>
+            <dl>
+                <div><dt>Floor</dt><dd>${formatPercent(candidate.floor)}</dd></div>
+                <div><dt>Ceiling</dt><dd>${formatPercent(candidate.ceiling)}</dd></div>
+                <div><dt>Margin</dt><dd>${formatPercent(candidate.margin)}</dd></div>
+                <div><dt>Selling Price</dt><dd>${formatPrice(expected.sellingPrice)} SAR</dd></div>
+                <div><dt>Expected Profit</dt><dd>${formatCurrency(expected.profit)} SAR</dd></div>
+                <div><dt>Stress Profit</dt><dd>${formatCurrency(stress.profit)} SAR</dd></div>
+                <div><dt>Stress Unbilled</dt><dd>${formatNumber(stress.unbilledAboveCeiling)} pallets</dd></div>
+            </dl>
+            <p>${optionComment(status, option)}</p>
+            <button class="option-select" type="button" data-option="${key}">Select option</button>
+        `;
+        container.appendChild(card);
     });
-}
 
-function updateTimestamp() {
-    byId("timestamp").textContent = new Date().toLocaleString("en-SA", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit"
+    document.querySelectorAll(".option-select").forEach(button => {
+        button.addEventListener("click", () => applyOption(button.dataset.option));
     });
 }
 
 function updateAllDisplays(sourceId) {
     const values = sanitizeInputs(sourceId);
-    const result = calculate(values);
-    const highResult = highUtilizationResult(values);
+    const { expected, stress } = evaluateStructure(values);
+    const status = decisionStatus(stress);
 
-    updateKpis(result, highResult);
-    updateCapacityBand(result);
-    updateScenarioTable(values);
-    updateSensitivityTable(values);
-    updateRecommendation(values, highResult);
-    updateScenarioButtons();
-    updateTimestamp();
+    updateKpis(values, expected, stress, status);
+    updateCapacityBand(values, expected, stress);
+    updateAssessment(values, expected, stress, status);
+    renderCommercialOptions(values);
 }
 
-function markCustomAndUpdate(sourceId) {
-    activeScenario = "custom";
+function markCurrentAndUpdate(sourceId) {
+    activeOption = "current";
     updateAllDisplays(sourceId);
 }
 
@@ -410,36 +404,36 @@ function bindSliderPair(sliderId, numberId) {
 
     slider.addEventListener("input", () => {
         number.value = slider.value;
-        markCustomAndUpdate(sliderId);
+        markCurrentAndUpdate(sliderId);
     });
 
     number.addEventListener("input", () => {
         slider.value = number.value;
-        markCustomAndUpdate(numberId);
+        markCurrentAndUpdate(numberId);
     });
 
     number.addEventListener("change", () => {
         slider.value = number.value;
-        markCustomAndUpdate(numberId);
+        markCurrentAndUpdate(numberId);
     });
 }
 
 function bindNumberInput(inputId) {
     const input = byId(inputId);
-    input.addEventListener("input", () => markCustomAndUpdate(inputId));
-    input.addEventListener("change", () => markCustomAndUpdate(inputId));
+    input.addEventListener("input", () => markCurrentAndUpdate(inputId));
+    input.addEventListener("change", () => markCurrentAndUpdate(inputId));
 }
 
-function applyScenario(key) {
+function applyOption(key) {
     const current = sanitizeInputs();
-    const next = scenarioValues(current, key);
-    activeScenario = key;
+    const next = optionValues(current, key);
+    activeOption = key;
     syncAllInputs(next);
     updateAllDisplays();
 }
 
 function resetDefaults() {
-    activeScenario = "custom";
+    activeOption = "current";
     syncAllInputs(DEFAULTS);
     updateAllDisplays();
 }
@@ -449,14 +443,11 @@ window.resetDefaults = resetDefaults;
 document.addEventListener("DOMContentLoaded", () => {
     bindSliderPair("floor", "floorVal");
     bindSliderPair("ceiling", "ceilingVal");
-    bindSliderPair("utilization", "utilizationVal");
+    bindSliderPair("expectedUtilization", "expectedUtilizationVal");
+    bindSliderPair("stressUtilization", "stressUtilizationVal");
     bindSliderPair("margin", "marginVal");
     bindNumberInput("capacity");
     bindNumberInput("cost");
-
-    document.querySelectorAll(".scenario-btn").forEach(button => {
-        button.addEventListener("click", () => applyScenario(button.dataset.scenario));
-    });
 
     updateAllDisplays();
 });
