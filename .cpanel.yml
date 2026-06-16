@@ -5,4 +5,7 @@ deployment:
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/rm -rf $DEPLOYPATH/*
     - /bin/cp -R dashboard/. $DEPLOYPATH/
-    
+    - export DEPLOYPATH2=/home/malmedlej/public_html/financing-engine
+    - /bin/mkdir -p $DEPLOYPATH2
+    - /bin/rm -rf $DEPLOYPATH2/*
+    - /bin/cp -R financing-engine/. $DEPLOYPATH2/
