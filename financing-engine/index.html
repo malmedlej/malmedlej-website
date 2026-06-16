@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Financing Engine</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-tap-highlight-color:transparent}
+body{background:#000000;font-family:Arial,Helvetica,sans-serif;padding:16px 12px 80px;min-height:100vh}
+.outer{max-width:420px;margin:auto}
+
+/* TOP BAR */
+.topbar{background:#2d1b69;border-radius:20px;padding:18px 18px 14px;margin-bottom:10px;text-align:center}
+.topbar h1{font-size:18px;font-weight:800;color:#fff;margin-bottom:3px}
+.topbar p{font-size:11px;color:#ffffff}
+
+/* TABS */
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tab{flex:1;padding:10px 6px;border-radius:12px;border:1.5px solid #2d1b69;background:#2d1b69;color:#ffffff;font-size:12px;font-weight:700;cursor:pointer;text-align:center;transition:all .12s}
+.tab.on{background:#f59e0b;border-color:#f59e0b;color:#1c1005}
+
+/* CARDS */
+.card{background:#2d1b69;border-radius:20px;padding:18px;margin-bottom:10px}
+.card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#ffffff;margin-bottom:14px}
+
+/* INPUTS */
+.field{margin-bottom:12px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:11px;font-weight:700;color:#fff;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.field input{width:100%;background:#1e0f4a;border:1.5px solid #5b3fc8;border-radius:10px;padding:11px 13px;font-size:16px;color:#fff;outline:none;-webkit-appearance:none}
+.field input:focus{border-color:#f59e0b;background:#2a1a60}
+.field .hint{font-size:10px;color:#ffffff;margin-top:3px}
+.row2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+
+/* VERSUS BLOCK */
+.versus{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:start;margin-bottom:10px}
+.vs-col{background:#2d1b69;border-radius:16px;padding:14px}
+.vs-col.new{border:1.5px solid #f59e0b}
+.vs-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#ffffff;margin-bottom:10px}
+.vs-label.gold{color:#f59e0b}
+.vs-row{margin-bottom:8px}
+.vs-row:last-child{margin-bottom:0}
+.vs-row .vrl{font-size:10px;color:#ffffff;margin-bottom:2px}
+.vs-row .vrv{font-size:14px;font-weight:700;color:#fff}
+.vs-row .vrv.green{color:#6ee7b7}
+.vs-row .vrv.red{color:#fca5a5}
+.vs-mid{display:flex;align-items:center;justify-content:center;padding-top:30px}
+.vs-mid span{font-size:11px;font-weight:800;color:#ffffff;background:#1e0f4a;border-radius:99px;padding:6px 8px}
+
+/* VERDICT */
+.verdict-card{border-radius:20px;padding:20px;margin-bottom:10px;text-align:center}
+.vc-green{background:#1a3a2a;border:2px solid #6ee7b7}
+.vc-yellow{background:#3a2a00;border:2px solid #fcd34d}
+.vc-red{background:#3a0a0a;border:2px solid #fca5a5}
+.verdict-rating{font-size:28px;font-weight:900;margin-bottom:4px;color:#fff}
+.verdict-action{font-size:14px;font-weight:700;margin-bottom:8px;opacity:.9;color:#fff}
+.verdict-text{font-size:12px;line-height:1.6;opacity:.8;color:#fff}
+
+/* BIG NUMBERS */
+.bignums{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+.bignum{background:#2d1b69;border-radius:16px;padding:14px}
+.bignum .bn-l{font-size:10px;color:#ffffff;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;line-height:1.3}
+.bignum .bn-v{font-size:22px;font-weight:900;color:#fff;letter-spacing:-.3px;line-height:1}
+.bignum .bn-s{font-size:10px;color:#ffffff;margin-top:4px}
+.bignum.gold{border:1.5px solid #f59e0b}
+.bignum.gold .bn-v{color:#fcd34d}
+.bignum.green{border:1.5px solid #6ee7b7}
+.bignum.green .bn-v{color:#6ee7b7}
+.bignum.red .bn-v{color:#fca5a5}
+
+/* SCENARIO TABLE */
+.scen-wrap{overflow-x:auto;border-radius:14px}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:11px}
+th{background:#1e0f4a;color:#ffffff;padding:9px 10px;text-align:left;font-weight:700;white-space:nowrap;text-transform:uppercase;letter-spacing:.05em}
+td{padding:10px 10px;border-bottom:1px solid rgba(255,255,255,.07);white-space:nowrap;color:#e2e8f0;font-size:12px}
+tr:last-child td{border-bottom:none}
+.tr-best td{background:rgba(245,158,11,.12)}
+.tr-best td:first-child{border-left:3px solid #f59e0b}
+.tr-cash td{background:rgba(99,102,241,.12)}
+.tr-cash td:first-child{border-left:3px solid #818cf8}
+.pill{display:inline-block;padding:3px 9px;border-radius:99px;font-size:10px;font-weight:800}
+.p-ex{background:#065f46;color:#6ee7b7}
+.p-go{background:#1e3a8a;color:#93c5fd}
+.p-ne{background:#78350f;color:#fcd34d}
+.p-ba{background:#7f1d1d;color:#fca5a5}
+
+/* BUTTON */
+.btn{width:100%;background:#f59e0b;color:#1c1005;border:none;border-radius:14px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;margin-top:6px}
+.btn:active{transform:scale(.98)}
+.btn-ghost{background:transparent;border:1.5px solid #5b3fc8;color:#ffffff;margin-top:8px}
+
+.divider{height:1px;background:rgba(255,255,255,.08);margin:14px 0}
+.note{font-size:10px;color:#ffffff;text-align:center;padding-top:8px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="outer">
+
+ <div class="topbar">
+  <h1>Financing Engine</h1>
+  <p>Saudi mortgage buyout &amp; personal financing decision tool</p>
+ </div>
+
+ <div class="tabs">
+  <button class="tab on" id="t1" onclick="switchTab('inputs')">Inputs</button>
+  <button class="tab" id="t2" onclick="switchTab('result')">Result</button>
+  <button class="tab" id="t3" onclick="switchTab('scenarios')">All scenarios</button>
+ </div>
+
+ <!-- TAB: INPUTS -->
+ <div id="pg-inputs">
+
+  <div class="card">
+   <div class="card-title">Your current situation</div>
+   <div class="row2">
+    <div class="field">
+     <label>Monthly salary</label>
+     <input id="salary" type="text" inputmode="numeric" value="36,604">
+     <div class="hint">SAR</div>
+    </div>
+    <div class="field">
+     <label>Current obligation</label>
+     <input id="currObl" type="text" inputmode="numeric" value="17,795">
+     <div class="hint">SAR / mo (mtg + PL)</div>
+    </div>
+   </div>
+   <div class="field">
+    <label>Early settlement amount</label>
+    <input id="settle" type="text" inputmode="numeric" value="2,754,100">
+    <div class="hint">SAR this is what the new bank will pay</div>
+   </div>
+   <div class="field">
+    <label>Current remaining total payments</label>
+    <input id="remaining" type="text" inputmode="numeric" value="4,523,104">
+    <div class="hint">SAR your benchmark for savings calculation</div>
+   </div>
+  </div>
+
+  <div class="card">
+   <div class="card-title">New mortgage offer</div>
+   <div class="row2">
+    <div class="field">
+     <label>Rate % annual</label>
+     <input id="mRate" type="number" inputmode="decimal" step="0.01" value="3.69">
+     <div class="hint">e.g. 3.65 or 3.71</div>
+    </div>
+    <div class="field">
+     <label>Term (years)</label>
+     <input id="mTerm" type="number" inputmode="numeric" value="20">
+     <div class="hint">e.g. 15, 18, 20, 22</div>
+    </div>
+   </div>
+  </div>
+
+  <div class="card">
+   <div class="card-title">Personal financing offer <span style="color:#ffffff;font-size:9px;font-weight:400;text-transform:none">(leave installment at 0 if none)</span></div>
+   <div class="row2">
+    <div class="field">
+     <label>Rate % annual</label>
+     <input id="pRate" type="number" inputmode="decimal" step="0.01" value="2">
+     <div class="hint">e.g. 2.00</div>
+    </div>
+    <div class="field">
+     <label>Monthly installment</label>
+     <input id="pInst" type="text" inputmode="numeric" placeholder="0">
+     <div class="hint">SAR exact banker quote</div>
+    </div>
+   </div>
+   <div class="note">Personal loan term is fixed at 60 months per Saudi regulation</div>
+  </div>
+
+  <button class="btn" onclick="switchTab('result')">Calculate</button>
+ </div>
+
+ <!-- TAB: RESULT -->
+ <div id="pg-result" style="display:none">
+
+  <div class="verdict-card" id="verdictCard">
+   <div class="verdict-rating" id="vRating"></div>
+   <div class="verdict-action" id="vAction"></div>
+   <div class="verdict-text" id="vText"></div>
+  </div>
+
+  <!-- CURRENT vs NEW -->
+  <div class="versus">
+   <div class="vs-col">
+    <div class="vs-label">Current</div>
+    <div class="vs-row"><div class="vrl">Monthly obligation</div><div class="vrv" id="cv-obl"></div></div>
+    <div class="vs-row"><div class="vrl">Remaining payments</div><div class="vrv" id="cv-rem"></div></div>
+    <div class="vs-row"><div class="vrl">Remaining salary</div><div class="vrv" id="cv-sal"></div></div>
+    <div class="vs-row"><div class="vrl">Deduction %</div><div class="vrv" id="cv-ded"></div></div>
+   </div>
+   <div class="vs-mid"><span>VS</span></div>
+   <div class="vs-col new">
+    <div class="vs-label gold">New offer</div>
+    <div class="vs-row"><div class="vrl">Monthly obligation</div><div class="vrv" id="nv-obl"></div></div>
+    <div class="vs-row"><div class="vrl">Total repayment</div><div class="vrv" id="nv-rep"></div></div>
+    <div class="vs-row"><div class="vrl">Remaining salary</div><div class="vrv" id="nv-sal"></div></div>
+    <div class="vs-row"><div class="vrl">Deduction %</div><div class="vrv" id="nv-ded"></div></div>
+   </div>
+  </div>
+
+  <!-- 4 BIG NUMBERS -->
+  <div class="bignums">
+   <div class="bignum gold">
+    <div class="bn-l">True savings</div>
+    <div class="bn-v" id="bn-sav"></div>
+    <div class="bn-s">vs current contract</div>
+   </div>
+   <div class="bignum green">
+    <div class="bn-l">Cash released</div>
+    <div class="bn-v" id="bn-cash"></div>
+    <div class="bn-s">personal loan amount</div>
+   </div>
+   <div class="bignum" id="bn-ded-card">
+    <div class="bn-l">Deduction ratio</div>
+    <div class="bn-v" id="bn-ded"></div>
+    <div class="bn-s">of salary</div>
+   </div>
+   <div class="bignum">
+    <div class="bn-l">Remaining salary</div>
+    <div class="bn-v" id="bn-sal"></div>
+    <div class="bn-s">SAR / month</div>
+   </div>
+  </div>
+
+  <!-- BREAKDOWN -->
+  <div class="card">
+   <div class="card-title">Full breakdown</div>
+   <div class="vs-row" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.07)"><span style="font-size:12px;color:#ffffff">New mortgage installment</span><span style="font-size:13px;font-weight:700;color:#fff" id="br-mi"></span></div>
+   <div class="vs-row" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.07)"><span style="font-size:12px;color:#ffffff">Mortgage total repayment</span><span style="font-size:13px;font-weight:700;color:#fff" id="br-mtr"></span></div>
+   <div class="vs-row" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.07)"><span style="font-size:12px;color:#ffffff">Mortgage profit paid</span><span style="font-size:13px;font-weight:700;color:#fff" id="br-mpr"></span></div>
+   <div class="divider"></div>
+   <div class="vs-row" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.07)"><span style="font-size:12px;color:#ffffff">Personal loan installment</span><span style="font-size:13px;font-weight:700;color:#fff" id="br-pi"></span></div>
+   <div class="vs-row" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.07)"><span style="font-size:12px;color:#ffffff">Personal loan amount (cash)</span><span style="font-size:13px;font-weight:700;color:#fcd34d" id="br-pa"></span></div>
+   <div class="vs-row" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.07)"><span style="font-size:12px;color:#ffffff">Personal loan profit paid</span><span style="font-size:13px;font-weight:700;color:#fff" id="br-ppr"></span></div>
+   <div class="divider"></div>
+   <div class="vs-row" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.07)"><span style="font-size:12px;color:#ffffff">Total monthly deduction</span><span style="font-size:13px;font-weight:700;color:#fff" id="br-tot"></span></div>
+   <div class="vs-row" style="display:flex;justify-content:space-between;padding:6px 0"><span style="font-size:12px;color:#ffffff">Remaining capacity to 65%</span><span style="font-size:13px;font-weight:700;color:#fff" id="br-cap"></span></div>
+  </div>
+
+  <button class="btn btn-ghost" onclick="switchTab('scenarios')">View all scenarios</button>
+  <button class="btn btn-ghost" onclick="switchTab('inputs')">Edit inputs</button>
+ </div>
+
+ <!-- TAB: SCENARIOS -->
+ <div id="pg-scenarios" style="display:none">
+  <div style="font-size:11px;color:#ffffff;margin-bottom:8px;text-align:center">Benchmark: SAR <span id="sc-rem"></span> remaining payments</div>
+
+  <div class="card" style="margin-bottom:6px">
+   <div class="card-title">Mortgage only — 4 term options</div>
+   <div id="scen-mtg"></div>
+  </div>
+
+  <div class="card">
+   <div class="card-title">Mortgage + personal financing — your offer first, then alternatives</div>
+   <div id="scen-pl"></div>
+  </div>
+
+  <button class="btn btn-ghost" onclick="switchTab('result')">Back to result</button>
+ </div>
+
+</div>
+
+<script>
+var PT=60;
+
+function fmt(n){if(!isFinite(n))return'0';var parts=Math.round(Math.abs(n)).toString().split('');var out=[];for(var i=0;i<parts.length;i++){if(i>0&&(parts.length-i)%3===0)out.push(',');out.push(parts[i]);}return(n<0?'-':'')+out.join('');}
+function g(id){var v=document.getElementById(id).value.replace(/,/g,'');return Number(v)||0}
+function s(id,v){document.getElementById(id).textContent=v}
+function sar(n){return isFinite(n)?'SAR '+fmt(n):''}
+function sarN(n){return isFinite(n)?fmt(n):''}
+function pct(n){return isFinite(n)?n.toFixed(1)+'%':''}
+
+function PMT(p,r,n){var m=r/100/12;if(n<=0||p<=0)return 0;if(m===0)return p/n;return p*m/(1-Math.pow(1+m,-n))}
+function PV(pmt,r,n){var m=r/100/12;if(n<=0||pmt<=0)return 0;if(m===0)return pmt*n;return pmt*(1-Math.pow(1+m,-n))/m}
+
+function getVerdict(sav,dp){
+ if(dp>65||sav<0)return{l:'Reject',a:'Do not accept this offer',t:'Savings are negative or deduction exceeds the 65% Saudi limit.',c:'vc-red',p:'p-ba'}
+ if(sav>500000&&dp<60)return{l:'Excellent',a:'Accept immediately',t:'Strong savings above SAR 500K with comfortable deduction. This offer significantly outperforms your current contract.',c:'vc-green',p:'p-ex'}
+ if(sav>200000&&dp<65)return{l:'Good',a:'Worth accepting',t:'Meaningful savings above SAR 200K. Deduction is within acceptable limits. Proceed after comparing banks.',c:'vc-green',p:'p-go'}
+ if(sav>0)return{l:'Neutral',a:'Review carefully',t:'Savings are positive but limited. Negotiate the rate down or compare other banks before committing.',c:'vc-yellow',p:'p-ne'}
+ return{l:'Reject',a:'Do not accept',t:'This offer does not improve your financial position.',c:'vc-red',p:'p-ba'}
+}
+
+function buildScenario(mYrs,pI){
+ var set=g('settle'),rem=g('remaining'),mR=g('mRate'),pR=g('pRate'),sal=g('salary')
+ var mi=PMT(set,mR,mYrs*12)
+ var mTot=mi*mYrs*12
+ var mPft=mTot-set
+ var pa=pI>0?PV(pI,pR,PT):0
+ var pTot=pI*PT
+ var pPft=pTot-pa
+ var tot=mi+pI
+ var dp=sal>0?(tot/sal)*100:0
+ var sav=rem-mTot-pPft
+ return{mi:mi,mTot:mTot,mPft:mPft,pa:pa,pTot:pTot,pPft:pPft,tot:tot,dp:dp,remSal:sal-tot,sav:sav,cap:sal*0.65-tot,v:getVerdict(sav,dp)}
+}
+
+function calc(){
+ var sal=g('salary'),currObl=g('currObl'),rem=g('remaining'),mT=g('mTerm'),pI=g('pInst')
+ var sc=buildScenario(mT,pI)
+
+ // verdict
+ var vcard=document.getElementById('verdictCard')
+ vcard.className='verdict-card '+sc.v.c
+ s('vRating',sc.v.l)
+ s('vAction',sc.v.a)
+ s('vText',sc.v.t)
+
+ // versus
+ s('cv-obl',sar(currObl))
+ s('cv-rem',sar(rem))
+ s('cv-sal',sar(sal-currObl))
+ s('cv-ded',pct(sal>0?(currObl/sal)*100:0))
+ s('nv-obl',sar(sc.tot))
+ s('nv-rep',sar(sc.mTot))
+ s('nv-sal',sar(sc.remSal))
+ s('nv-ded',pct(sc.dp))
+
+ // big numbers
+ s('bn-sav',sarN(sc.sav))
+ s('bn-cash',sarN(sc.pa))
+ s('bn-ded',pct(sc.dp))
+ s('bn-sal',sarN(sc.remSal))
+ var dc=document.getElementById('bn-ded-card')
+ dc.className='bignum'+(sc.dp>65?' red':sc.dp>60?' ':' green')
+
+ // breakdown
+ s('br-mi',sar(sc.mi))
+ s('br-mtr',sar(sc.mTot))
+ s('br-mpr',sar(sc.mPft))
+ s('br-pi',pI>0?sar(pI):'None')
+ s('br-pa',pI>0?sar(sc.pa):'None')
+ s('br-ppr',pI>0?sar(sc.pPft):'None')
+ s('br-tot',sar(sc.tot))
+ s('br-cap',sar(sc.cap))
+}
+
+function scenCard(label,sc,isBest,isCash,isYours){
+ var borderColor=isYours?'#f59e0b':isBest?'#6ee7b7':isCash?'#818cf8':'#3b2f7a';
+ var savColor=sc.sav>200000?'#fcd34d':sc.sav>0?'#6ee7b7':'#fca5a5';
+ var tag='';
+ if(isYours) tag='<span class="pill" style="background:#78350f;color:#fcd34d;margin-bottom:8px;display:inline-block">Your offer</span>';
+ else if(isBest) tag='<span class="pill p-ex" style="margin-bottom:8px;display:inline-block">Best savings</span>';
+ else if(isCash) tag='<span class="pill" style="background:#1e3a8a;color:#93c5fd;margin-bottom:8px;display:inline-block">Best cash-out</span>';
+ return '<div style="border:1.5px solid '+borderColor+';border-radius:14px;padding:14px;margin-bottom:8px;background:#1e0f4a">'
+  +(tag?'<div>'+tag+'</div>':'')
+  +'<div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:10px">'+label+'</div>'
+  +'<div style="font-size:26px;font-weight:900;color:'+savColor+';letter-spacing:-.5px;margin-bottom:2px">SAR '+fmt(sc.sav)+'</div>'
+  +'<div style="font-size:10px;color:#ffffff;margin-bottom:12px">true savings vs current contract</div>'
+  +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+  +'<div style="background:#2d1b69;border-radius:10px;padding:10px"><div style="font-size:10px;color:#ffffff;margin-bottom:3px">Monthly deduction</div><div style="font-size:14px;font-weight:700;color:#fff">SAR '+fmt(sc.tot)+'</div></div>'
+  +'<div style="background:#2d1b69;border-radius:10px;padding:10px"><div style="font-size:10px;color:#ffffff;margin-bottom:3px">Deduction %</div><div style="font-size:14px;font-weight:700;color:'+(sc.dp>65?'#fca5a5':sc.dp>60?'#fcd34d':'#6ee7b7')+'">'+pct(sc.dp)+'</div></div>'
+  +'<div style="background:#2d1b69;border-radius:10px;padding:10px"><div style="font-size:10px;color:#ffffff;margin-bottom:3px">Remaining salary</div><div style="font-size:14px;font-weight:700;color:#fff">SAR '+fmt(sc.remSal)+'</div></div>'
+  +(sc.pa>0
+    ?'<div style="background:#2d1b69;border-radius:10px;padding:10px"><div style="font-size:10px;color:#ffffff;margin-bottom:3px">Cash released</div><div style="font-size:14px;font-weight:700;color:#fcd34d">SAR '+fmt(sc.pa)+'</div></div>'
+    :'<div style="background:#2d1b69;border-radius:10px;padding:10px"><div style="font-size:10px;color:#ffffff;margin-bottom:3px">Mtg installment</div><div style="font-size:14px;font-weight:700;color:#fff">SAR '+fmt(sc.mi)+'</div></div>')
+  +'</div>'
+  +'<div style="margin-top:10px;text-align:right"><span class="pill '+sc.v.p+'">'+sc.v.l+'</span></div>'
+  +'</div>';
+}
+
+function renderScenarios(){
+ var rem=g('remaining'),mT=g('mTerm'),pI=g('pInst'),pR=g('pRate');
+ s('sc-rem',fmt(rem));
+
+ // Mortgage only — 4 terms
+ var mtgRows=[15,18,20,22].map(function(y){
+  return{name:y+' year term',mYrs:y,pI:0,sc:buildScenario(y,0)};
+ });
+
+ // Mortgage + PL — your exact input first, then standard options
+ var stdAmounts=[3000,4000,5000,6000,7000];
+ var yourAmount=pI>0?pI:0;
+ var plAmounts=[];
+ if(yourAmount>0){
+  plAmounts.push({amt:yourAmount,isYours:true});
+  stdAmounts.forEach(function(a){if(a!==yourAmount)plAmounts.push({amt:a,isYours:false});});
+ } else {
+  stdAmounts.forEach(function(a){plAmounts.push({amt:a,isYours:false});});
+ }
+
+ var plRows=plAmounts.map(function(x){
+  var label=x.isYours
+   ?'Your offer — SAR '+fmt(x.amt)+' / mo ('+mT+'yr mtg)'
+   :'SAR '+fmt(x.amt)+' / mo ('+mT+'yr mtg)';
+  return{name:label,amt:x.amt,isYours:x.isYours,sc:buildScenario(mT,x.amt)};
+ });
+
+ // Find best savings and best cash-out across all
+ var allRows=mtgRows.map(function(r){return{name:r.name,sc:r.sc,isYours:false};})
+  .concat(plRows.map(function(r){return{name:r.name,sc:r.sc,isYours:r.isYours};}));
+ var safe=allRows.filter(function(x){return x.sc.dp<=65&&x.sc.sav>0;});
+
+ var bSav=null,bCash=null;
+ if(safe.length){
+  bSav=safe[0];
+  safe.forEach(function(x){if(x.sc.sav>bSav.sc.sav)bSav=x;});
+  var wc=safe.filter(function(x){return x.sc.pa>0;});
+  if(wc.length){bCash=wc[0];wc.forEach(function(x){if(x.sc.pa>bCash.sc.pa)bCash=x;});}
+ }
+
+ var mtgHtml='';
+ mtgRows.forEach(function(r){
+  var isBest=bSav&&r.name===bSav.name;
+  var isCash=bCash&&r.name===bCash.name;
+  mtgHtml+=scenCard(r.name,r.sc,isBest,isCash,false);
+ });
+
+ var plHtml='';
+ plRows.forEach(function(r){
+  var isBest=bSav&&r.name===bSav.name;
+  var isCash=bCash&&r.name===bCash.name;
+  plHtml+=scenCard(r.name,r.sc,isBest,isCash,r.isYours);
+ });
+
+ document.getElementById('scen-mtg').innerHTML=mtgHtml;
+ document.getElementById('scen-pl').innerHTML=plHtml;
+}
+
+function switchTab(id){
+ ;['inputs','result','scenarios'].forEach(function(n){
+  document.getElementById('pg-'+n).style.display=n===id?'block':'none'
+  document.getElementById('t'+(n==='inputs'?1:n==='result'?2:3)).className='tab'+(n===id?' on':'')
+ })
+ calc()
+ if(id==='scenarios')renderScenarios()
+}
+
+var sarIds=['salary','currObl','settle','remaining','pInst'];
+var numIds=['mRate','mTerm','pRate'];
+
+sarIds.forEach(function(id){
+  var el=document.getElementById(id);
+  var raw=el.value.replace(/,/g,'');
+  el.setAttribute('type','text');
+  el.setAttribute('inputmode','numeric');
+  el.value=raw>0?fmt(Number(raw)):'';
+  el.addEventListener('input',function(){
+    var p=el.selectionStart;
+    var oldL=el.value.length;
+    var digits=el.value.replace(/[^0-9]/g,'');
+    var num=parseInt(digits||'0',10);
+    el.value=num>0?fmt(num):'';
+    var diff=el.value.length-oldL;
+    try{el.setSelectionRange(p+diff,p+diff);}catch(e){}
+    calc();
+  });
+});
+
+numIds.forEach(function(id){
+  document.getElementById(id).addEventListener('input',calc);
+});
+
+calc();
+</script>
+</body>
+</html>
